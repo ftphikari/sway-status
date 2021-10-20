@@ -10,9 +10,17 @@ var (
 	date_interval  int32  = 1
 	date_format    string = " Mon 2006-01-02"
 	time_format    string = " 15:04"
+	ticker_enabled bool
 )
 
 func init_date() {
+	// a single instance updates both date and time
+	// so do not allow running 2 instances at the same time
+	if ticker_enabled {
+		return
+	}
+
+	ticker_enabled = true
 	t := time.Now()
 	date_full_text = t.Format(date_format)
 	time_full_text = t.Format(time_format)

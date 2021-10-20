@@ -1,20 +1,35 @@
 package main
 
 import (
-	"time"
 	"fmt"
 	"net"
 	"os"
+	"time"
 
 	"github.com/mdlayher/wifi"
 )
 
 var (
 	net_full_text string
-	net_interval int = 1
+	net_interval  int = 1
 )
 
-func getSSID(i int, c *wifi.Client) (ssid string, ok bool) {
+func getIP(i net.Interface) (ip string) {
+	addrs, _ := i.Addrs()
+	for _, a := range addrs {
+		if ipnet, ok := a.(*net.IPNet); ok {
+			if ipnet.IP.To4() == nil {
+				ip = ipnet.IP.String()
+			} else {
+				ip = ipnet.IP.String()
+				break
+			}
+		}
+	}
+	return
+}
+
+func getSSID(i int, c *wifi.Client) (ssid string) {
 	ifs, err := c.Interfaces()
 	if err != nil {
 		return
@@ -31,7 +46,6 @@ func getSSID(i int, c *wifi.Client) (ssid string, ok bool) {
 		}
 
 		ssid = bss.SSID
-		ok = true
 		return
 	}
 
@@ -55,7 +69,7 @@ func isWifi(i int, c *wifi.Client) (ok bool) {
 }
 
 func hasCarrier(n string) (ok bool) {
-	b, err := os.ReadFile("/sys/class/net/"+n+"/carrier")
+	b, err := os.ReadFile("/sys/class/net/" + n + "/carrier")
 	if err != nil {
 		return
 	}
@@ -69,57 +83,48 @@ func hasCarrier(n string) (ok bool) {
 func get_net(c *wifi.Client) (net_str string) {
 	ifs, _ := net.Interfaces()
 	for _, i := range ifs {
-		if i.Flags & net.FlagLoopback != 0 {
+		if i.Flags&net.FlagLoopback != 0 {
 			continue
 		}
-		if i.Flags & net.FlagUp == 0 {
+		if i.Flags&net.FlagUp == 0 {
 			continue
 		}
 		if net_str != "" {
 			net_str = fmt.Sprint(net_str, " ")
 		}
+
 		iswifi := isWifi(i.Index, c)
+		ip := getIP(i)
+
+		var label, ssid string
+		var connected bool
 		if iswifi {
-			net_str = fmt.Sprint(net_str, "")
+			label = ""
+			ssid = getSSID(i.Index, c)
+			if ssid != "" {
+				connected = true
+			}
 		} else {
-			net_str = fmt.Sprint(net_str, "")
+			label = ""
+			connected = hasCarrier(i.Name)
 		}
-		net_str = fmt.Sprint(net_str, " [", i.Name)
-
-		if !iswifi && !hasCarrier(i.Name) {
-			net_str = fmt.Sprint(net_str, "]")
+		if connected && ip != "" {
+			label = `<span foreground="#00dc1b">` + label + `</span>`
+		}
+		net_str = fmt.Sprint(net_str, label)
+		if !connected {
 			continue
 		}
 
 		if iswifi {
-			ssid, ok := getSSID(i.Index, c)
-			if ok {
-				net_str = fmt.Sprint(net_str, " ", ssid)
+			if showip && ip != "" {
+				net_str = fmt.Sprint(net_str, " [", ip, " ", ssid, "]")
 			} else {
-				net_str = fmt.Sprint(net_str, "]")
-				continue
+				net_str = fmt.Sprint(net_str, " [", ssid, "]")
 			}
+		} else if showip && ip != "" {
+			net_str = fmt.Sprint(net_str, " [", ip, "]")
 		}
-
-		addrs, _ := i.Addrs()
-		var ip string
-		for _, a := range addrs {
-			if ipnet, ok := a.(*net.IPNet); ok {
-				if ipnet.IP.To4() == nil {
-					ip = ipnet.IP.String()
-				} else {
-					ip = ipnet.IP.String()
-					break
-				}
-			}
-		}
-
-		if ip == "" {
-			net_str = fmt.Sprint(net_str, "]")
-			continue
-		}
-
-		net_str = fmt.Sprint(net_str, " ", ip, "]")
 	}
 	return
 }

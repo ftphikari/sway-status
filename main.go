@@ -2,19 +2,37 @@ package main
 
 import (
 	"errors"
-	"fmt"
-	"sync"
-	"strings"
 	"flag"
+	"fmt"
+	"strings"
+	"sync"
 )
 
 type replacements map[string]string
 
+type Module struct {
+	f    func()
+	text *string
+}
+
 var (
+	format string
+	showip bool
+	repl   = make(replacements)
+
 	m       sync.Mutex
-	update  chan bool
-	format  string
-	repl    = make(replacements)
+	update  = make(chan bool)
+	modules = map[string]Module{
+		"cpu":     {init_cpu, &cpu_full_text},
+		"temp":    {init_temp, &temp_full_text},
+		"net":     {init_net, &net_full_text},
+		"bat":     {init_bat, &bat_full_text},
+		"speaker": {init_speaker, &speaker_full_text},
+		"mic":     {init_mic, &mic_full_text},
+		"lang":    {init_lang, &lang_full_text},
+		"date":    {init_date, &date_full_text},
+		"time":    {init_date, &time_full_text},
+	}
 )
 
 func (r replacements) String() string {
@@ -34,46 +52,26 @@ func (r replacements) Set(value string) error {
 	return nil
 }
 
-// print modules
 func print_bar() {
 	m.Lock()
-	replacer := strings.NewReplacer("cpu", cpu_full_text, "temp", temp_full_text, "bat", bat_full_text, "speaker", speaker_full_text, "mic", mic_full_text, "date", date_full_text, "time", time_full_text, "lang", lang_full_text, "net", net_full_text)
-	status := replacer.Replace(format)
-	fmt.Println(status)
+	var mrepl []string
+	for k, v := range modules {
+		mrepl = append(mrepl, k, *v.text)
+	}
+	fmt.Println(strings.NewReplacer(mrepl[:]...).Replace(format))
 	m.Unlock()
 }
 
 func main() {
-	flag.StringVar(&format, "f", "cpu temp | net | bat | speaker mic | date | time | lang ", "format")
+	flag.StringVar(&format, "f", "cpu temp | net | bat | speaker mic | lang | date | time ", "format")
+	flag.BoolVar(&showip, "i", false, "show ip of network interfaces")
 	flag.Var(repl, "r", "language replacements (e.g. -r 'English (US):US' -r 'Ukrainian:UA')")
 	flag.Parse()
 
-	// setup modules
-	update = make(chan bool)
-
-	if strings.Contains(format, "lang") {
-		init_lang()
-	}
-	if strings.Contains(format, "speaker") {
-		init_speaker()
-	}
-	if strings.Contains(format, "mic") {
-		init_mic()
-	}
-	if strings.Contains(format, "bat") {
-		init_bat()
-	}
-	if strings.Contains(format, "cpu") {
-		init_cpu()
-	}
-	if strings.Contains(format, "temp") {
-		init_temp()
-	}
-	if strings.Contains(format, "net") {
-		init_net()
-	}
-	if strings.Contains(format, "date") || strings.Contains(format, "time") {
-		init_date()
+	for k, v := range modules {
+		if strings.Contains(format, k) {
+			v.f()
+		}
 	}
 
 	print_bar()
