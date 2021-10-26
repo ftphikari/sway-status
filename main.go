@@ -21,6 +21,7 @@ type Module struct {
 var (
 	format string
 	showip bool
+	flags  bool
 	repl   = make(replacements)
 
 	m       sync.Mutex
@@ -76,6 +77,7 @@ func main() {
 
 	flag.StringVar(&format, "f", "cpu temp | net | bat | speaker mic | lang | date | time ", "format")
 	flag.BoolVar(&showip, "i", false, "show ip of network interfaces")
+	flag.BoolVar(&flags, "flags", false, "display flags instead of languages")
 	flag.Var(repl, "r", "language replacements (e.g. -r 'English (US):US' -r 'Ukrainian:UA')")
 	flag.Parse()
 
