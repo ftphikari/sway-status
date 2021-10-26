@@ -12,13 +12,6 @@ type handler struct {
 
 var (
 	lang_full_text string
-	flags_repl     = map[string]string{
-		"English (US)":                        "🇺🇸",
-		"English (US, euro on 5)":             "🇺🇸",
-		"English (US, intl., with dead keys)": "🇺🇸",
-		"Ukrainian":                           "🇺🇦",
-		"Russian":                             "🇷🇺",
-	}
 )
 
 func (h handler) Input(ctx context.Context, e sway.InputEvent) {
