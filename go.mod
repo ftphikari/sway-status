@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/godbus/dbus/v5 v5.0.5
+	github.com/goodsign/monday v1.0.0
 	github.com/joshuarubin/go-sway v1.0.0
 	github.com/mdlayher/wifi v0.0.0-20200527114002-84f0b9457fdd
 	github.com/shirou/gopsutil/v3 v3.21.8

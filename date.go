@@ -2,6 +2,8 @@ package main
 
 import (
 	"time"
+
+	"github.com/goodsign/monday"
 )
 
 var (
@@ -22,8 +24,8 @@ func init_date() {
 
 	ticker_enabled = true
 	t := time.Now()
-	date_full_text = t.Format(date_format)
-	time_full_text = t.Format(time_format)
+	date_full_text = monday.Format(t, date_format, locale)
+	time_full_text = monday.Format(t, time_format, locale)
 
 	go update_date()
 }
@@ -36,8 +38,8 @@ func update_date() {
 		t := <-ticker.C
 		// for testing time difference
 		//fmt.Println("Current time: ", t)
-		new_date := t.Format(date_format)
-		new_time := t.Format(time_format)
+		new_date := monday.Format(t, date_format, locale)
+		new_time := monday.Format(t, time_format, locale)
 		upd := false
 
 		if date_full_text != new_date {

@@ -4,8 +4,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
+
+	"github.com/goodsign/monday"
 )
 
 type replacements map[string]string
@@ -33,6 +36,7 @@ var (
 		"date":    {init_date, &date_full_text},
 		"time":    {init_date, &time_full_text},
 	}
+	locale monday.Locale
 )
 
 func (r replacements) String() string {
@@ -63,6 +67,13 @@ func print_bar() {
 }
 
 func main() {
+	envlang, ok := os.LookupEnv("LANG")
+	if ok {
+		locale = monday.Locale(strings.Split(envlang, ".")[0])
+	} else {
+		locale = monday.LocaleEnUS
+	}
+
 	flag.StringVar(&format, "f", "cpu temp | net | bat | speaker mic | lang | date | time ", "format")
 	flag.BoolVar(&showip, "i", false, "show ip of network interfaces")
 	flag.Var(repl, "r", "language replacements (e.g. -r 'English (US):US' -r 'Ukrainian:UA')")
